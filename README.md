@@ -1,4 +1,4 @@
-# AutoSync Pythin
+# AutoSync Pythin - AutoSync.py
 AutoSync VIdeo + Audio for podcast
 
 ```
