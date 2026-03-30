@@ -2,6 +2,11 @@
 
 All notable changes to this project are recorded in this file.
 
+## [1.0.25] - 2026-03-30
+
+### Added
+- Added a Russian `README.md` with an overview of the desktop apps, key features, build flow, project structure, and bundled Windows dependencies.
+
 ## [1.0.24] - 2026-03-30
 
 ### Changed
