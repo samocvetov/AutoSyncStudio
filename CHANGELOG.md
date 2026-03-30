@@ -2,6 +2,11 @@
 
 All notable changes to this project are recorded in this file.
 
+## [1.0.26] - 2026-03-30
+
+### Changed
+- Cleaned the project root by removing the legacy `OLD` tree from version control and tightening `.gitignore` for cache folders, runtime state, Windows thumbnails, and obsolete local build artifacts.
+
 ## [1.0.25] - 2026-03-30
 
 ### Added

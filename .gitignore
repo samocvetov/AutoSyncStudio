@@ -1,6 +1,9 @@
 .DS_Store
+Thumbs.db
 .cache/
 .autosync-runtime/
+OLD/
+winbundle/
 *.exe
 *.syso
 third_party/windows/*.zip
