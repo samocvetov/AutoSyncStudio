@@ -1426,7 +1426,7 @@ func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)
 		if err != nil {
 			return "", "", 0, nil, 0, err
 		}
-		shots = buildSpeakerShotPlan(utterances, totalSeconds, len(analyses), primaryIndex, minShot)
+		shots = buildSpeakerShotPlan(analyses, utterances, totalSeconds, primaryIndex, minShot)
 	}
 	if len(shots) == 0 {
 		shots = buildShotPlan(analyses, totalSeconds, shotWindow, minShot, primaryIndex)
@@ -1434,6 +1434,11 @@ func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)
 	if len(shots) == 0 {
 		return "", "", 0, nil, 0, errors.New("failed to build shot plan")
 	}
+	shots, timelineTrimStart, adjustedTotalSeconds := normalizeRenderableShots(analyses, shots, totalSeconds, primaryIndex)
+	if len(shots) == 0 {
+		return "", "", 0, nil, 0, errors.New("no renderable multicam segments after availability normalization")
+	}
+	totalSeconds = adjustedTotalSeconds
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return "", "", 0, nil, 0, err
@@ -1457,33 +1462,19 @@ func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)
 		camera := analyses[shot.CameraIndex]
 		sourceStart := shot.Start - camera.Metrics.DelaySeconds
 		sourceEnd := shot.End - camera.Metrics.DelaySeconds
-		if sourceEnd <= 0 {
+		if sourceStart < 0 || sourceEnd <= sourceStart {
 			continue
 		}
 
-		var segmentFilter string
 		label := fmt.Sprintf("v%d", i)
-		duration := shot.End - shot.Start
 		scalePart := fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=%s", referenceMeta.Width, referenceMeta.Height, referenceMeta.Width, referenceMeta.Height, fpsValue)
-		if sourceStart < 0 {
-			leadIn := math.Abs(sourceStart)
-			segmentFilter = fmt.Sprintf("[%d:v]trim=start=0:end=%s,%s,setpts=PTS-STARTPTS,tpad=start_duration=%s:start_mode=clone,trim=start=0:end=%s[%s]",
-				shot.CameraIndex,
-				trimFloat(sourceEnd, 6),
-				scalePart,
-				trimFloat(leadIn, 6),
-				trimFloat(duration, 6),
-				label,
-			)
-		} else {
-			segmentFilter = fmt.Sprintf("[%d:v]trim=start=%s:end=%s,%s,setpts=PTS-STARTPTS[%s]",
-				shot.CameraIndex,
-				trimFloat(sourceStart, 6),
-				trimFloat(sourceEnd, 6),
-				scalePart,
-				label,
-			)
-		}
+		segmentFilter := fmt.Sprintf("[%d:v]trim=start=%s:end=%s,%s,setpts=PTS-STARTPTS[%s]",
+			shot.CameraIndex,
+			trimFloat(sourceStart, 6),
+			trimFloat(sourceEnd, 6),
+			scalePart,
+			label,
+		)
 		filterParts = append(filterParts, segmentFilter)
 		concatInputs = append(concatInputs, fmt.Sprintf("[%s]", label))
 	}
@@ -1493,7 +1484,7 @@ func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)
 
 	filterParts = append(filterParts, fmt.Sprintf("%sconcat=n=%d:v=1:a=0[vout]", strings.Join(concatInputs, ""), len(concatInputs)))
 	audioIndex := len(analyses)
-	filterParts = append(filterParts, fmt.Sprintf("[%d:a]atrim=start=0:end=%s,asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0[aout]", audioIndex, trimFloat(totalSeconds, 6)))
+	filterParts = append(filterParts, fmt.Sprintf("[%d:a]atrim=start=%s:end=%s,asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0[aout]", audioIndex, trimFloat(timelineTrimStart, 6), trimFloat(timelineTrimStart+totalSeconds, 6)))
 
 	ffmpegArgs := []string{"-y"}
 	for _, camera := range analyses {
@@ -1565,7 +1556,7 @@ func buildShotPlan(cameras []multicamAnalysis, totalSeconds, shotWindow, minShot
 			}
 		}
 		if bestIndex == -1 {
-			bestIndex = primaryIndex
+			bestIndex = selectBestTimelineCamera(cameras, start, end, primaryIndex, -1)
 		}
 		if len(segments) == 0 {
 			segments = append(segments, shotSegment{CameraIndex: bestIndex, Start: start, End: end})
@@ -1598,9 +1589,21 @@ func buildShotPlan(cameras []multicamAnalysis, totalSeconds, shotWindow, minShot
 }
 
 func cameraAvailableAt(camera multicamAnalysis, start, end float64) bool {
+	return cameraCoverage(camera, start, end) >= 0.98
+}
+
+func cameraCoverage(camera multicamAnalysis, start, end float64) float64 {
+	if end <= start {
+		return 0
+	}
 	alignedStart := camera.Metrics.DelaySeconds
 	alignedEnd := camera.Metrics.DelaySeconds + camera.Meta.Duration
-	return end > alignedStart && start < alignedEnd
+	overlapStart := math.Max(start, alignedStart)
+	overlapEnd := math.Min(end, alignedEnd)
+	if overlapEnd <= overlapStart {
+		return 0
+	}
+	return (overlapEnd - overlapStart) / (end - start)
 }
 
 func scoreCameraActivity(camera multicamAnalysis, start, end float64) float64 {
@@ -1672,7 +1675,91 @@ func smoothShotPlan(segments []shotSegment, minShot float64, primaryIndex int) [
 	return merged
 }
 
-func buildSpeakerShotPlan(utterances []AssemblyUtterance, totalSeconds float64, cameraCount, primaryIndex int, minShot float64) []shotSegment {
+func normalizeRenderableShot(camera multicamAnalysis, shot shotSegment) (shotSegment, bool) {
+	start := math.Max(shot.Start, camera.Metrics.DelaySeconds)
+	end := math.Min(shot.End, camera.Metrics.DelaySeconds+camera.Meta.Duration)
+	if end <= start {
+		return shotSegment{}, false
+	}
+	shot.Start = start
+	shot.End = end
+	return shot, true
+}
+
+func normalizeRenderableShots(cameras []multicamAnalysis, shots []shotSegment, totalSeconds float64, primaryIndex int) ([]shotSegment, float64, float64) {
+	if len(shots) == 0 {
+		return nil, 0, totalSeconds
+	}
+
+	normalized := make([]shotSegment, 0, len(shots))
+	for _, shot := range shots {
+		if shot.CameraIndex >= 0 && shot.CameraIndex < len(cameras) {
+			if adjusted, ok := normalizeRenderableShot(cameras[shot.CameraIndex], shot); ok {
+				normalized = append(normalized, adjusted)
+				continue
+			}
+		}
+
+		alternate := selectBestTimelineCamera(cameras, shot.Start, shot.End, primaryIndex, shot.CameraIndex)
+		if alternate >= 0 && alternate < len(cameras) {
+			if adjusted, ok := normalizeRenderableShot(cameras[alternate], shotSegment{CameraIndex: alternate, Start: shot.Start, End: shot.End}); ok {
+				normalized = append(normalized, adjusted)
+			}
+		}
+	}
+	if len(normalized) == 0 {
+		return nil, 0, totalSeconds
+	}
+
+	filled := make([]shotSegment, 0, len(normalized)*2)
+	filled = append(filled, normalized[0])
+	for _, segment := range normalized[1:] {
+		last := &filled[len(filled)-1]
+		if segment.Start > last.End {
+			gapStart := last.End
+			gapEnd := segment.Start
+
+			if extended, ok := normalizeRenderableShot(cameras[last.CameraIndex], shotSegment{CameraIndex: last.CameraIndex, Start: gapStart, End: gapEnd}); ok && math.Abs(extended.Start-gapStart) < 0.001 {
+				last.End = extended.End
+			} else if extended, ok := normalizeRenderableShot(cameras[segment.CameraIndex], shotSegment{CameraIndex: segment.CameraIndex, Start: gapStart, End: gapEnd}); ok && math.Abs(extended.End-gapEnd) < 0.001 {
+				segment.Start = extended.Start
+			} else {
+				gapCamera := selectBestTimelineCamera(cameras, gapStart, gapEnd, last.CameraIndex, -1)
+				if gapCamera >= 0 && gapCamera < len(cameras) {
+					if gap, ok := normalizeRenderableShot(cameras[gapCamera], shotSegment{CameraIndex: gapCamera, Start: gapStart, End: gapEnd}); ok {
+						if len(filled) > 0 && filled[len(filled)-1].CameraIndex == gap.CameraIndex && gap.Start <= filled[len(filled)-1].End+0.001 {
+							if gap.End > filled[len(filled)-1].End {
+								filled[len(filled)-1].End = gap.End
+							}
+						} else {
+							filled = append(filled, gap)
+						}
+					}
+				}
+			}
+		}
+
+		if len(filled) > 0 && filled[len(filled)-1].CameraIndex == segment.CameraIndex && segment.Start <= filled[len(filled)-1].End+0.001 {
+			if segment.End > filled[len(filled)-1].End {
+				filled[len(filled)-1].End = segment.End
+			}
+			continue
+		}
+		filled = append(filled, segment)
+	}
+
+	trimStart := math.Max(0, filled[0].Start)
+	if trimStart > 0 {
+		totalSeconds -= trimStart
+	}
+	if totalSeconds < 0 {
+		totalSeconds = 0
+	}
+	return filled, trimStart, totalSeconds
+}
+
+func buildSpeakerShotPlan(cameras []multicamAnalysis, utterances []AssemblyUtterance, totalSeconds float64, primaryIndex int, minShot float64) []shotSegment {
+	cameraCount := len(cameras)
 	if totalSeconds <= 0 || cameraCount <= 0 {
 		return nil
 	}
@@ -1698,23 +1785,35 @@ func buildSpeakerShotPlan(utterances []AssemblyUtterance, totalSeconds float64, 
 			primaryDuration = entry.duration
 		}
 	}
-	secondaryCamera := primaryIndex
-	for idx := 0; idx < cameraCount; idx++ {
-		if idx != primaryIndex {
-			secondaryCamera = idx
-			break
-		}
-	}
 	utteranceThreshold := math.Max(minShot, 2.0)
-	mapSpeaker := func(speaker string, duration float64) int {
+	speakerMap := map[string]int{}
+	nextFallbackCamera := 0
+	mapSpeaker := func(speaker string, start, end float64) int {
 		speaker = strings.TrimSpace(speaker)
 		if speaker == "" || speaker == primarySpeaker {
-			return primaryIndex
+			return selectBestTimelineCamera(cameras, start, end, primaryIndex, -1)
 		}
+		duration := end - start
 		if duration < utteranceThreshold {
-			return primaryIndex
+			return selectBestTimelineCamera(cameras, start, end, primaryIndex, -1)
 		}
-		return secondaryCamera
+		if mapped, ok := speakerMap[speaker]; ok && mapped >= 0 && mapped < cameraCount {
+			return selectBestTimelineCamera(cameras, start, end, mapped, -1)
+		}
+
+		best := selectBestTimelineCamera(cameras, start, end, -1, primaryIndex)
+		if best == primaryIndex {
+			for attempts := 0; attempts < cameraCount; attempts++ {
+				candidate := nextFallbackCamera % cameraCount
+				nextFallbackCamera++
+				if candidate != primaryIndex {
+					best = candidate
+					break
+				}
+			}
+		}
+		speakerMap[speaker] = best
+		return best
 	}
 
 	segments := make([]shotSegment, 0, len(utterances)+2)
@@ -1726,14 +1825,16 @@ func buildSpeakerShotPlan(utterances []AssemblyUtterance, totalSeconds float64, 
 			continue
 		}
 		if start > cursor {
-			segments = append(segments, shotSegment{CameraIndex: primaryIndex, Start: cursor, End: start})
+			gapCamera := selectBestTimelineCamera(cameras, cursor, start, primaryIndex, -1)
+			segments = append(segments, shotSegment{CameraIndex: gapCamera, Start: cursor, End: start})
 		}
-		cam := mapSpeaker(utterance.Speaker, end-start)
+		cam := mapSpeaker(utterance.Speaker, start, end)
 		segments = append(segments, shotSegment{CameraIndex: cam, Start: start, End: end})
 		cursor = end
 	}
 	if cursor < totalSeconds {
-		segments = append(segments, shotSegment{CameraIndex: primaryIndex, Start: cursor, End: totalSeconds})
+		tailCamera := selectBestTimelineCamera(cameras, cursor, totalSeconds, primaryIndex, -1)
+		segments = append(segments, shotSegment{CameraIndex: tailCamera, Start: cursor, End: totalSeconds})
 	}
 
 	merged := make([]shotSegment, 0, len(segments))
@@ -1744,7 +1845,103 @@ func buildSpeakerShotPlan(utterances []AssemblyUtterance, totalSeconds float64, 
 		}
 		merged = append(merged, segment)
 	}
-	return smoothShotPlan(merged, minShot, primaryIndex)
+	return diversifyPrimaryShots(cameras, smoothShotPlan(merged, minShot, primaryIndex), primaryIndex, minShot)
+}
+
+func selectBestTimelineCamera(cameras []multicamAnalysis, start, end float64, preferredIndex, avoidIndex int) int {
+	bestIndex := -1
+	bestScore := -math.MaxFloat64
+	for idx, camera := range cameras {
+		if idx == avoidIndex {
+			continue
+		}
+		coverage := cameraCoverage(camera, start, end)
+		if coverage < 0.85 {
+			continue
+		}
+		score := scoreCameraActivity(camera, start, end)
+		if bestIndex == -1 || score > bestScore+0.02 || (math.Abs(score-bestScore) < 0.02 && idx == preferredIndex) {
+			bestIndex = idx
+			bestScore = score
+		}
+	}
+	if bestIndex != -1 {
+		return bestIndex
+	}
+
+	bestCoverage := -1.0
+	for idx, camera := range cameras {
+		if idx == avoidIndex {
+			continue
+		}
+		coverage := cameraCoverage(camera, start, end)
+		if coverage <= 0 {
+			continue
+		}
+		score := scoreCameraActivity(camera, start, end)
+		if coverage > bestCoverage+0.05 || (math.Abs(coverage-bestCoverage) < 0.05 && (bestIndex == -1 || score > bestScore+0.02 || (math.Abs(score-bestScore) < 0.02 && idx == preferredIndex))) {
+			bestIndex = idx
+			bestCoverage = coverage
+			bestScore = score
+		}
+	}
+	if bestIndex != -1 {
+		return bestIndex
+	}
+	if preferredIndex >= 0 && preferredIndex < len(cameras) {
+		return preferredIndex
+	}
+	return 0
+}
+
+func diversifyPrimaryShots(cameras []multicamAnalysis, segments []shotSegment, primaryIndex int, minShot float64) []shotSegment {
+	if len(cameras) < 3 || len(segments) == 0 {
+		return segments
+	}
+
+	minCutaway := math.Max(minShot, 3.0)
+	longSegmentThreshold := math.Max(minShot*3, 14.0)
+	diversified := make([]shotSegment, 0, len(segments)+len(segments)/2)
+
+	for i, segment := range segments {
+		duration := segment.End - segment.Start
+		if segment.CameraIndex != primaryIndex || duration < longSegmentThreshold {
+			diversified = append(diversified, segment)
+			continue
+		}
+
+		avoidIndex := -1
+		if len(diversified) > 0 {
+			avoidIndex = diversified[len(diversified)-1].CameraIndex
+		}
+		if i+1 < len(segments) && segments[i+1].CameraIndex != primaryIndex {
+			avoidIndex = segments[i+1].CameraIndex
+		}
+
+		cutawayDuration := math.Min(math.Max(duration/3.0, minCutaway), duration-minCutaway)
+		if cutawayDuration < minCutaway {
+			diversified = append(diversified, segment)
+			continue
+		}
+
+		cutawayStart := segment.Start + (duration-cutawayDuration)/2.0
+		cutawayEnd := cutawayStart + cutawayDuration
+		alternateIndex := selectBestTimelineCamera(cameras, cutawayStart, cutawayEnd, primaryIndex, avoidIndex)
+		if alternateIndex == primaryIndex {
+			diversified = append(diversified, segment)
+			continue
+		}
+
+		if cutawayStart-segment.Start >= minShot {
+			diversified = append(diversified, shotSegment{CameraIndex: primaryIndex, Start: segment.Start, End: cutawayStart})
+		}
+		diversified = append(diversified, shotSegment{CameraIndex: alternateIndex, Start: cutawayStart, End: cutawayEnd})
+		if segment.End-cutawayEnd >= minShot {
+			diversified = append(diversified, shotSegment{CameraIndex: primaryIndex, Start: cutawayEnd, End: segment.End})
+		}
+	}
+
+	return smoothShotPlan(diversified, minShot, primaryIndex)
 }
 
 func (a *App) renderSyncedFile(req syncRenderRequest, send func(progressEvent)) (string, string, time.Duration, error) {
@@ -2886,7 +3083,7 @@ func buildCameraAlignPlan(cameraPath string, delaySeconds float64, outputDir, pr
 	ffmpegArgs := []string{"-y", "-i", cameraPath}
 	strategy := ""
 	if delaySeconds >= 0 {
-		filter := fmt.Sprintf("tpad=start_duration=%.6f:start_mode=clone,setpts=PTS-STARTPTS", delaySeconds)
+		filter := fmt.Sprintf("tpad=start_duration=%.6f:start_mode=add:color=black,setpts=PTS-STARTPTS", delaySeconds)
 		ffmpegArgs = append(ffmpegArgs,
 			"-vf", filter,
 			"-an",
@@ -2894,7 +3091,7 @@ func buildCameraAlignPlan(cameraPath string, delaySeconds float64, outputDir, pr
 		)
 		ffmpegArgs = append(ffmpegArgs, videoEncodeArgsForMode(backend.Mode, crf, preset)...)
 		ffmpegArgs = append(ffmpegArgs, outputPath)
-		strategy = "Камера стартует позже мастера: команда добавляет lead-in через tpad и сохраняет video-only mezzanine."
+		strategy = "Камера стартует позже мастера: команда добавляет черный lead-in через tpad и сохраняет video-only mezzanine."
 	} else {
 		filter := fmt.Sprintf("trim=start=%.6f,setpts=PTS-STARTPTS", math.Abs(delaySeconds))
 		ffmpegArgs = append(ffmpegArgs,
@@ -2919,6 +3116,31 @@ func buildCameraAlignPlan(cameraPath string, delaySeconds float64, outputDir, pr
 		Strategy:     strategy,
 		Command:      shellJoin(append([]string{backend.Executable}, args...)),
 	}
+}
+
+func (a *App) renderAlignedCamera(inputPath, outputPath string, delaySeconds float64, preset string, crf int, backend executionPlan) error {
+	ffmpegArgs := []string{"-y", "-i", inputPath}
+	if delaySeconds >= 0 {
+		filter := fmt.Sprintf("tpad=start_duration=%.6f:start_mode=add:color=black,setpts=PTS-STARTPTS", delaySeconds)
+		ffmpegArgs = append(ffmpegArgs,
+			"-vf", filter,
+			"-an",
+			"-pix_fmt", "yuv420p",
+		)
+	} else {
+		filter := fmt.Sprintf("trim=start=%.6f,setpts=PTS-STARTPTS", math.Abs(delaySeconds))
+		ffmpegArgs = append(ffmpegArgs,
+			"-vf", filter,
+			"-an",
+			"-pix_fmt", "yuv420p",
+		)
+	}
+	ffmpegArgs = append(ffmpegArgs, videoEncodeArgsForMode(backend.Mode, crf, preset)...)
+	ffmpegArgs = append(ffmpegArgs, outputPath)
+
+	args := append([]string{}, backend.PrefixArgs...)
+	args = append(args, ffmpegArgs...)
+	return a.runFFmpegCommand(backend.Executable, args, 0, nil)
 }
 
 func (a *App) resolveExecutionPlan(mode, remoteAddress, remoteSecret, remoteClientPath string) (executionPlan, error) {

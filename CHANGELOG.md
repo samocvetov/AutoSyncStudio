@@ -2,6 +2,79 @@
 
 All notable changes to this project are recorded in this file.
 
+## [1.0.39] - 2026-03-31
+
+### Fixed
+- Fixed the multicam render coordinate bug introduced in 1.0.38: after trimming leading empty timeline time, shot segments now stay in original master-audio coordinates instead of being shifted a second time, so the first real camera no longer disappears and later shots no longer freeze from negative source trims.
+
+## [1.0.38] - 2026-03-31
+
+### Fixed
+- Normalized final multicam shot segments against real camera availability before rendering: delayed cameras are no longer allowed to start a shot before they actually have footage, and tiny timing gaps are now reassigned or extended instead of being rendered as black `tpad` inserts between cuts.
+- Trimmed the leading empty portion of the final multicam output when the first usable camera starts later than master audio, so the exported video no longer begins with artificial empty pre-roll.
+
+## [1.0.37] - 2026-03-31
+
+### Fixed
+- Updated exported multicam aligned-camera commands to match the actual aligned-render implementation: delayed cameras now use black `tpad` lead-in (`start_mode=add:color=black`) instead of cloning the first frame.
+
+## [1.0.36] - 2026-03-31
+
+### Fixed
+- Reverted the incorrect 1.0.35 multicam baseline shift. Master audio now remains anchored at timeline zero again, matching the Premiere layout where all cameras start later than the external audio.
+
+## [1.0.35] - 2026-03-31
+
+### Fixed
+- Changed final multicam rendering to trim the master audio by the earliest positive camera offset and shift all camera delays relative to that baseline, matching the working single-cam sync model instead of keeping full audio pre-roll and padding video from absolute master time zero.
+
+## [1.0.34] - 2026-03-31
+
+### Fixed
+- Restored the Russian UTF-8 UI strings in the desktop interface after the 1.0.33 encoding regression in `main.js`.
+- Reapplied the clean multicam fallback completion report without the misleading log-break warning, this time without damaging file encoding.
+## [1.0.33] - 2026-03-31
+
+### Fixed
+- Stopped the fast multicam planner from blindly falling back to the primary camera for windows that no camera fully covers, which had still been producing bad cuts and apparent desync on large-offset timelines.
+- Restored per-shot black lead-in inside the fast multicam render path for ranges that begin before a delayed camera actually starts, preserving timeline timing without reviving the slow aligned pre-render stage.
+- Removed the leftover multicam fallback message claiming the log stream had broken after completion; successful fallback completion now shows a clean finish report instead of an error-like warning.
+
+## [1.0.32] - 2026-03-31
+
+### Fixed
+- Removed the accidental per-camera aligned pre-render step from final multicam rendering, restoring the fast direct-edit pipeline instead of creating mandatory temporary mezzanine files before every render.
+- Tightened camera eligibility in multicam shot selection so the fast path only uses cameras that fully cover the requested shot window, avoiding the earlier fake lead-in behavior without bringing back slow aligned staging.
+
+## [1.0.31] - 2026-03-30
+
+### Fixed
+- Fixed multicam aligned-mezzanine generation after the 1.0.29 render rewrite by staging intermediate aligned outputs through the same Windows-safe output path handling used elsewhere, avoiding `Error opening output files` on Cyrillic paths.
+
+## [1.0.30] - 2026-03-30
+
+### Fixed
+- Restored the broken Russian UI strings in the desktop multicam interface after the previous encoding regression in `main.js`.
+
+## [1.0.29] - 2026-03-30
+
+### Fixed
+- Switched final multicam rendering to pre-render per-camera aligned mezzanine files and cut the final timeline from those aligned sources instead of trimming raw delayed camera inputs directly.
+- Changed internal multicam aligned lead-in from frozen first-frame padding to black padding, matching the practical “camera is not on the timeline yet” behavior more closely for delayed sources.
+- Removed the alarming multicam fallback text about the log stream breaking after completion so successful renders now end with a clean completion report.
+
+## [1.0.28] - 2026-03-30
+
+### Fixed
+- Prevented `Smart AI` multicam from choosing cameras for timeline ranges they do not actually cover yet, which had been causing frozen lead-in frames and severe apparent desync on sources with large positive offsets.
+- Added coverage-aware camera selection for utterance segments, silent gaps, and long cutaway insertion so delayed cameras only enter the edit when they have enough real footage for that portion of the timeline.
+
+## [1.0.27] - 2026-03-30
+
+### Fixed
+- Reworked `Smart AI` multicam shot planning so it no longer behaves like a hardcoded two-camera interview mode when three or more cameras are present.
+- Added camera-aware alternate shot selection for non-primary speakers and stable cutaway insertion inside long primary-camera segments, allowing extra cameras to appear without chaotic switching.
+
 ## [1.0.26] - 2026-03-30
 
 ### Changed

@@ -3,15 +3,15 @@ const DEFAULT_LANGUAGE = "ru";
 
 const I18N = {
   ru: {
-    document_title: "AutoSync Studio 1.0.21",
-    app_title: "AutoSync Studio 1.0.21",
+    document_title: "AutoSync Studio 1.0.34",
+    app_title: "AutoSync Studio 1.0.34",
     hero_subtitle: "Новая версия проекта с фокусом на точный sync, а не на хрупкую магию.",
     tab_sync: "Single-Cam Sync",
     tab_multicam: "Multicam",
     tab_backend: "Render Backend",
     studio_single_subtitle: "Для сценария, где есть видеозапись с камеры и отдельный мастер-аудиофайл.",
-    multicam_subtitle: "Сначала надёжно измеряем смещения всех камер относительно мастер-аудио, а уже потом строим точный рендер без скрытой магии.",
-    backend_panel_subtitle: "Единый backend исполнения для single-cam и multicam: локальный CPU, локальный GPU или удалённый ffmpeg-over-ip.",
+    multicam_subtitle: "Сначала надежно измеряем смещения всех камер относительно мастер-аудио, а уже потом строим точный рендер без скрытой магии.",
+    backend_panel_subtitle: "Единый backend исполнения для single-cam и multicam: локальный CPU, локальный GPU или удаленный ffmpeg-over-ip.",
     label_video_path: "Путь к видео",
     label_video_path_short: "Видео",
     label_audio_path: "Путь к мастер-аудио",
@@ -64,7 +64,7 @@ const I18N = {
     status_render_cancelled: "Рендер остановлен пользователем.",
     status_progress: "Прогресс",
     multicam_output_idle: "Здесь появятся результаты измерения смещений, экспортные команды и предпросмотр плана склеек.",
-    multicam_note: "Это новая архитектура проекта: сначала надёжная диагностика, затем точный рендер. Автомонтаж наращивается уже поверх корректной временной модели.",
+    multicam_note: "Это новая архитектура проекта: сначала надежная диагностика, затем точный рендер. Автомонтаж наращивается уже поверх корректной временной модели.",
     backend_output_idle: "Здесь отображаются статус встроенных компонентов и выбранная конфигурация backend.",
     browse_btn: "Обзор",
     placeholder_video_path: "C:\\Video\\camera.mp4",
@@ -91,7 +91,7 @@ const I18N = {
     label_confidence: "Уверенность",
     label_video_duration: "Длительность видео",
     label_audio_duration: "Длительность аудио",
-    label_render_complete: "Рендер завершён.",
+    label_render_complete: "Рендер завершен.",
     label_offset_used: "Использованное смещение",
     label_saved_to: "Сохранено в",
     label_elapsed: "Время выполнения",
@@ -101,16 +101,16 @@ const I18N = {
     label_note: "Примечание",
     label_output: "Выходной файл",
     label_strategy: "Стратегия",
-    label_multicam_render_complete: "Multicam-рендер завершён.",
+    label_multicam_render_complete: "Multicam-рендер завершен.",
     label_timeline_duration: "Длительность таймлайна",
     label_shots: "Количество планов",
     label_shot_plan_preview: "Предпросмотр плана склеек",
-    label_more_segments: "… и ещё {count} сегментов",
+    label_more_segments: "... и еще {count} сегментов",
     label_system_manifest: "Встроенные компоненты",
     label_unknown_request_error: "Неизвестная ошибка запроса",
     mode_cpu: "Локальный CPU",
     mode_gpu: "Локальный GPU",
-    mode_remote: "Удалённый ffmpeg-over-ip",
+    mode_remote: "Удаленный ffmpeg-over-ip",
   },
   en: {
     document_title: "AutoSync Studio 1.0.21",
@@ -840,9 +840,7 @@ document.getElementById("renderMulticamBtn").addEventListener("click", async () 
               t("label_multicam_render_complete"),
               `${t("label_saved_to")}: ${resolvedOutputPath}`,
               previewSeconds > 0 ? `${t("label_timeline_duration")}: ${previewSeconds} ${t("unit_seconds_short")}` : "",
-              "",
-              "Отчет потока лога оборвался после завершения, но итоговый файл уже создан.",
-            ].join("\n"),
+            ].filter(Boolean).join("\n"),
             false,
           );
           return;
@@ -1012,3 +1010,4 @@ setLanguage(currentLanguage);
 switchTab(currentTab);
 loadStoredSecrets();
 loadSystem();
+
