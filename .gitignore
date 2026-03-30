@@ -4,6 +4,8 @@
 *.exe
 *.syso
 third_party/windows/*.zip
+/cmd/studio-desktop/winres/
+/cmd/render-server-desktop/winres/
 /autosync-studio
 /autosync-render-server
 /autosync-studio-desktop

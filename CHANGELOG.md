@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded in this file.
 
+## [1.0.24] - 2026-03-30
+
+### Changed
+- Installed the new user-provided app icon into the Windows build asset.
+- Reworked the Windows resource generation so Wails desktop builds place the icon under the resource ID expected by the native window title bar, with a dedicated 16x16 variant for the small system icon.
+
 ## [1.0.23] - 2026-03-30
 
 ### Changed
