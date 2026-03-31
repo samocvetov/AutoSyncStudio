@@ -4,6 +4,8 @@ Thumbs.db
 .autosync-runtime/
 OLD/
 winbundle/
+backups/code/
+internal/appmeta/*.go.*
 *.exe
 *.syso
 third_party/windows/*.zip

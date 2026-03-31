@@ -302,6 +302,44 @@ let currentTab = "Sync";
 let activeRenderOutput = null;
 let currentSystemDisplayName = "";
 
+Object.assign(I18N.ru, {
+  confirm_sync_preview_render: "Budet sdelan tolko preview-render single-cam na {seconds}. Prodolzhit?",
+  confirm_multicam_preview_render: "Budet sdelan tolko preview-render multicam na {seconds}. Prodolzhit?",
+  label_preview_render: "Preview render",
+  label_offsets_source_cached: "Offsets reused from the last Analyze",
+  label_offsets_source_fresh: "Offsets recalculated during Render",
+});
+
+Object.assign(I18N.en, {
+  confirm_sync_preview_render: "This will render only a single-cam preview for {seconds}. Continue?",
+  confirm_multicam_preview_render: "This will render only a multicam preview for {seconds}. Continue?",
+  label_preview_render: "Preview render",
+  label_offsets_source_cached: "Offsets reused from the last Analyze",
+  label_offsets_source_fresh: "Offsets recalculated during Render",
+});
+
+function normalizeComparablePath(value) {
+  return String(value || "").trim().replace(/\//g, "\\").toLowerCase();
+}
+
+function previewLabel(seconds) {
+  if (seconds === 120) {
+    return t("preview_2min");
+  }
+  if (seconds === 300) {
+    return t("preview_5min");
+  }
+  return `${seconds} ${t("unit_seconds_short")}`;
+}
+
+function confirmPreviewRender(seconds, mode) {
+  if (!(seconds > 0)) {
+    return true;
+  }
+  const key = mode === "multicam" ? "confirm_multicam_preview_render" : "confirm_sync_preview_render";
+  return window.confirm(t(key, { seconds: previewLabel(seconds) }));
+}
+
 function loadLanguage() {
   const saved = localStorage.getItem(STORAGE_LANGUAGE_KEY);
   return saved && I18N[saved] ? saved : DEFAULT_LANGUAGE;
@@ -780,6 +818,25 @@ function currentMulticamPayload() {
   };
 }
 
+function multicamAnalysisSignature(payload) {
+  return JSON.stringify({
+    masterAudioPath: normalizeComparablePath(payload.masterAudioPath),
+    cameraPaths: payload.cameraPaths.map((item) => normalizeComparablePath(item)),
+    analyzeSeconds: Number(payload.analyzeSeconds || 0),
+    maxLagSeconds: Number(payload.maxLagSeconds || 0),
+  });
+}
+
+function reusableMulticamMeasuredCameras(payload) {
+  if (!lastMulticamResult || !Array.isArray(lastMulticamResult.cameras)) {
+    return [];
+  }
+  if (lastMulticamResult.analysisSignature !== multicamAnalysisSignature(payload)) {
+    return [];
+  }
+  return lastMulticamResult.cameras;
+}
+
 function currentAISettings() {
   return {
     editMode: document.getElementById("editMode").value,
@@ -938,12 +995,16 @@ document.getElementById("renderSyncBtn").addEventListener("click", async () => {
     const payload = currentSyncPayload();
     const result = await request("/api/analyze-sync", payload);
     lastDelaySeconds = result.delaySeconds;
+    const previewSeconds = currentPreviewSeconds();
+    if (!confirmPreviewRender(previewSeconds, "sync")) {
+      return;
+    }
 
     await runStreamedRender("/api/render-sync-stream", {
       videoPath: payload.videoPath,
       audioPath: payload.audioPath,
       outputPath: document.getElementById("outputPath").value.trim(),
-      previewSeconds: currentPreviewSeconds(),
+      previewSeconds,
       delaySeconds: lastDelaySeconds,
       crf: Number(document.getElementById("crf").value || 18),
       preset: document.getElementById("preset").value,
@@ -954,6 +1015,7 @@ document.getElementById("renderSyncBtn").addEventListener("click", async () => {
         [
           t("label_render_complete"),
           `${t("label_offset_used")}: ${fmtSeconds(lastDelaySeconds)}`,
+          previewSeconds > 0 ? `${t("label_preview_render")}: ${previewLabel(previewSeconds)}` : "",
           `${t("label_saved_to")}: ${renderResult.outputPath}`,
           `${t("label_elapsed")}: ${renderResult.duration}`,
           "",
@@ -972,17 +1034,20 @@ document.getElementById("analyzeMulticamBtn").addEventListener("click", async ()
   setOutput(multicamOutput, t("status_multicam_analyzing"), false);
   try {
     const payload = currentMulticamPayload();
-    const [result, exportResult] = await Promise.all([
-      request("/api/analyze-multicam", payload),
-      request("/api/export-multicam-plan", {
-        ...payload,
-        outputDir: deriveMulticamAlignedDir(),
-        crf: Number(document.getElementById("multicamCrf").value || 18),
-        preset: document.getElementById("multicamPreset").value,
-        ...currentBackendPayload(),
-      }),
-    ]);
-    lastMulticamResult = { ...result, exportPlan: exportResult };
+    const result = await request("/api/analyze-multicam", payload);
+    const exportResult = await request("/api/export-multicam-plan", {
+      ...payload,
+      measuredCameras: result.cameras,
+      outputDir: deriveMulticamAlignedDir(),
+      crf: Number(document.getElementById("multicamCrf").value || 18),
+      preset: document.getElementById("multicamPreset").value,
+      ...currentBackendPayload(),
+    });
+    lastMulticamResult = {
+      ...result,
+      exportPlan: exportResult,
+      analysisSignature: multicamAnalysisSignature(payload),
+    };
 
     const analysisLines = result.cameras.map((camera, index) => {
       return [
@@ -1018,8 +1083,13 @@ document.getElementById("renderMulticamBtn").addEventListener("click", async () 
   const previewSeconds = currentMulticamPreviewSeconds();
   try {
     const payload = currentMulticamPayload();
+    if (!confirmPreviewRender(previewSeconds, "multicam")) {
+      return;
+    }
+    const measuredCameras = reusableMulticamMeasuredCameras(payload);
     await runStreamedRender("/api/render-multicam-stream", {
       ...payload,
+      measuredCameras,
       outputPath: requestedOutputPath,
       previewSeconds,
       crf: Number(document.getElementById("multicamCrf").value || 18),
@@ -1030,7 +1100,7 @@ document.getElementById("renderMulticamBtn").addEventListener("click", async () 
       ...currentAISettings(),
       ...currentBackendPayload(),
     }, multicamOutput, t("status_multicam_rendering"), t("label_multicam_render_complete"), (result) => {
-      lastMulticamResult = result;
+      lastMulticamResult = { ...(lastMulticamResult || {}), ...result };
       const totalTimelineSeconds = typeof result.totalSeconds === "number"
         ? result.totalSeconds
         : result.totalTime;
@@ -1046,6 +1116,8 @@ document.getElementById("renderMulticamBtn").addEventListener("click", async () 
         multicamOutput,
         [
           t("label_multicam_render_complete"),
+          `${measuredCameras.length > 0 ? t("label_offsets_source_cached") : t("label_offsets_source_fresh")}`,
+          previewSeconds > 0 ? `${t("label_preview_render")}: ${previewLabel(previewSeconds)}` : "",
           `${t("label_saved_to")}: ${result.outputPath}`,
           `${t("label_elapsed")}: ${result.duration}`,
           `${t("label_timeline_duration")}: ${totalTimelineSeconds} ${t("unit_seconds_short")}`,
@@ -1069,8 +1141,10 @@ document.getElementById("renderMulticamBtn").addEventListener("click", async () 
             multicamOutput,
             [
               t("label_multicam_render_complete"),
+              `${measuredCameras.length > 0 ? t("label_offsets_source_cached") : t("label_offsets_source_fresh")}`,
+              previewSeconds > 0 ? `${t("label_preview_render")}: ${previewLabel(previewSeconds)}` : "",
               `${t("label_saved_to")}: ${resolvedOutputPath}`,
-              previewSeconds > 0 ? `${t("label_timeline_duration")}: ${previewSeconds} ${t("unit_seconds_short")}` : "",
+              previewSeconds > 0 ? `${t("label_timeline_duration")}: ${previewLabel(previewSeconds)}` : "",
             ].filter(Boolean).join("\n"),
             false,
           );

@@ -157,17 +157,18 @@ type multicamAnalyzeResponse struct {
 }
 
 type multicamExportRequest struct {
-	MasterAudioPath  string   `json:"masterAudioPath"`
-	CameraPaths      []string `json:"cameraPaths"`
-	AnalyzeSeconds   float64  `json:"analyzeSeconds"`
-	MaxLagSeconds    float64  `json:"maxLagSeconds"`
-	OutputDir        string   `json:"outputDir"`
-	CRF              int      `json:"crf"`
-	Preset           string   `json:"preset"`
-	ExecutionMode    string   `json:"executionMode"`
-	RemoteAddress    string   `json:"remoteAddress"`
-	RemoteSecret     string   `json:"remoteSecret"`
-	RemoteClientPath string   `json:"remoteClientPath"`
+	MasterAudioPath  string                 `json:"masterAudioPath"`
+	CameraPaths      []string               `json:"cameraPaths"`
+	AnalyzeSeconds   float64                `json:"analyzeSeconds"`
+	MaxLagSeconds    float64                `json:"maxLagSeconds"`
+	MeasuredCameras  []multicamCameraResult `json:"measuredCameras,omitempty"`
+	OutputDir        string                 `json:"outputDir"`
+	CRF              int                    `json:"crf"`
+	Preset           string                 `json:"preset"`
+	ExecutionMode    string                 `json:"executionMode"`
+	RemoteAddress    string                 `json:"remoteAddress"`
+	RemoteSecret     string                 `json:"remoteSecret"`
+	RemoteClientPath string                 `json:"remoteClientPath"`
 }
 
 type multicamExportPlan struct {
@@ -188,26 +189,27 @@ type multicamExportResponse struct {
 }
 
 type multicamRenderRequest struct {
-	MasterAudioPath   string   `json:"masterAudioPath"`
-	CameraPaths       []string `json:"cameraPaths"`
-	AnalyzeSeconds    float64  `json:"analyzeSeconds"`
-	MaxLagSeconds     float64  `json:"maxLagSeconds"`
-	OutputPath        string   `json:"outputPath"`
-	PreviewSeconds    float64  `json:"previewSeconds"`
-	CRF               int      `json:"crf"`
-	Preset            string   `json:"preset"`
-	ExecutionMode     string   `json:"executionMode"`
-	RemoteAddress     string   `json:"remoteAddress"`
-	RemoteSecret      string   `json:"remoteSecret"`
-	RemoteClientPath  string   `json:"remoteClientPath"`
-	ShotWindowSeconds float64  `json:"shotWindowSeconds"`
-	MinShotSeconds    float64  `json:"minShotSeconds"`
-	PrimaryCamera     int      `json:"primaryCamera"`
-	EditMode          string   `json:"editMode"`
-	AssemblyAIKey     string   `json:"assemblyAiKey"`
-	AIProvider        string   `json:"aiProvider"`
-	AIKey             string   `json:"aiKey"`
-	AIPrompt          string   `json:"aiPrompt"`
+	MasterAudioPath   string                 `json:"masterAudioPath"`
+	CameraPaths       []string               `json:"cameraPaths"`
+	AnalyzeSeconds    float64                `json:"analyzeSeconds"`
+	MaxLagSeconds     float64                `json:"maxLagSeconds"`
+	MeasuredCameras   []multicamCameraResult `json:"measuredCameras,omitempty"`
+	OutputPath        string                 `json:"outputPath"`
+	PreviewSeconds    float64                `json:"previewSeconds"`
+	CRF               int                    `json:"crf"`
+	Preset            string                 `json:"preset"`
+	ExecutionMode     string                 `json:"executionMode"`
+	RemoteAddress     string                 `json:"remoteAddress"`
+	RemoteSecret      string                 `json:"remoteSecret"`
+	RemoteClientPath  string                 `json:"remoteClientPath"`
+	ShotWindowSeconds float64                `json:"shotWindowSeconds"`
+	MinShotSeconds    float64                `json:"minShotSeconds"`
+	PrimaryCamera     int                    `json:"primaryCamera"`
+	EditMode          string                 `json:"editMode"`
+	AssemblyAIKey     string                 `json:"assemblyAiKey"`
+	AIProvider        string                 `json:"aiProvider"`
+	AIKey             string                 `json:"aiKey"`
+	AIPrompt          string                 `json:"aiPrompt"`
 }
 
 type multicamRenderResponse struct {
@@ -263,6 +265,7 @@ type executionPlan struct {
 	Mode       string
 	Executable string
 	PrefixArgs []string
+	Cleanup    func()
 }
 
 type videoStreamMeta struct {
@@ -773,7 +776,7 @@ func (a *App) handleExportMulticamPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	outputDir := strings.TrimSpace(req.OutputDir)
 
-	planBackend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath)
+	planBackend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath, false)
 	if err != nil {
 		a.writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -790,10 +793,14 @@ func (a *App) handleExportMulticamPlan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		metrics, err := a.analyzeSync(path, req.MasterAudioPath, req.AnalyzeSeconds, req.MaxLagSeconds)
-		if err != nil {
-			a.writeError(w, http.StatusBadRequest, fmt.Sprintf("%s: %v", path, err))
-			return
+		metrics, ok := measuredMetricsForPath(path, req.MeasuredCameras)
+		if !ok {
+			var err error
+			metrics, err = a.analyzeSync(path, req.MasterAudioPath, req.AnalyzeSeconds, req.MaxLagSeconds)
+			if err != nil {
+				a.writeError(w, http.StatusBadRequest, fmt.Sprintf("%s: %v", path, err))
+				return
+			}
 		}
 
 		plan := buildCameraAlignPlan(path, metrics.DelaySeconds, outputDir, preset, crf, metrics.Confidence, planBackend)
@@ -1321,9 +1328,12 @@ func scoreLag(reference, candidate []float64, lag int) float64 {
 }
 
 func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)) (string, string, time.Duration, []shotSegment, float64, error) {
-	backend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath)
+	backend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath, true)
 	if err != nil {
 		return "", "", 0, nil, 0, err
+	}
+	if backend.Cleanup != nil {
+		defer backend.Cleanup()
 	}
 
 	preset := strings.TrimSpace(req.Preset)
@@ -1369,9 +1379,13 @@ func (a *App) renderMulticam(req multicamRenderRequest, send func(progressEvent)
 		if err := validateExistingFile(originalPath, "cameraPath"); err != nil {
 			return "", "", 0, nil, 0, err
 		}
-		metrics, err := a.analyzeSync(originalPath, req.MasterAudioPath, req.AnalyzeSeconds, req.MaxLagSeconds)
-		if err != nil {
-			return "", "", 0, nil, 0, fmt.Errorf("%s: %w", originalPath, err)
+		metrics, ok := measuredMetricsForPath(originalPath, req.MeasuredCameras)
+		if !ok {
+			var err error
+			metrics, err = a.analyzeSync(originalPath, req.MasterAudioPath, req.AnalyzeSeconds, req.MaxLagSeconds)
+			if err != nil {
+				return "", "", 0, nil, 0, fmt.Errorf("%s: %w", originalPath, err)
+			}
 		}
 		renderPath, cleanupRenderPath, err := stageInputPathForWindowsInDir(originalPath, stagingRoot)
 		if err != nil {
@@ -1980,9 +1994,12 @@ func (a *App) renderSyncedFile(req syncRenderRequest, send func(progressEvent)) 
 	}
 	defer cleanupOutput()
 
-	backend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath)
+	backend, err := a.resolveExecutionPlan(req.ExecutionMode, req.RemoteAddress, req.RemoteSecret, req.RemoteClientPath, true)
 	if err != nil {
 		return "", "", 0, err
+	}
+	if backend.Cleanup != nil {
+		defer backend.Cleanup()
 	}
 
 	delay := req.DelaySeconds
@@ -3162,10 +3179,13 @@ func (a *App) renderAlignedCamera(inputPath, outputPath string, delaySeconds flo
 
 	args := append([]string{}, backend.PrefixArgs...)
 	args = append(args, ffmpegArgs...)
+	if backend.Cleanup != nil {
+		defer backend.Cleanup()
+	}
 	return a.runFFmpegCommand(backend.Executable, args, 0, nil)
 }
 
-func (a *App) resolveExecutionPlan(mode, remoteAddress, remoteSecret, remoteClientPath string) (executionPlan, error) {
+func (a *App) resolveExecutionPlan(mode, remoteAddress, remoteSecret, remoteClientPath string, ephemeralRemoteConfig bool) (executionPlan, error) {
 	normalized := strings.TrimSpace(strings.ToLower(mode))
 	if normalized == "" {
 		normalized = "cpu"
@@ -3203,19 +3223,57 @@ func (a *App) resolveExecutionPlan(mode, remoteAddress, remoteSecret, remoteClie
 		if strings.TrimSpace(remoteSecret) == "" {
 			return executionPlan{}, errors.New("remoteSecret is required for ffmpeg-over-ip mode")
 		}
-		configPath, err := writeFFmpegOverIPClientConfig(strings.TrimSpace(remoteAddress), strings.TrimSpace(remoteSecret))
-		if err != nil {
-			return executionPlan{}, err
+		configPath := ""
+		cleanup := func() {}
+		if ephemeralRemoteConfig {
+			var err error
+			configPath, cleanup, err = writeTemporaryFFmpegOverIPClientConfig(strings.TrimSpace(remoteAddress), strings.TrimSpace(remoteSecret))
+			if err != nil {
+				return executionPlan{}, err
+			}
+		} else {
+			var err error
+			configPath, err = writeFFmpegOverIPClientConfig(strings.TrimSpace(remoteAddress), strings.TrimSpace(remoteSecret))
+			if err != nil {
+				return executionPlan{}, err
+			}
 		}
 		prefixArgs := []string{"--config", configPath}
 		return executionPlan{
 			Mode:       "remote",
 			Executable: clientPath,
 			PrefixArgs: prefixArgs,
+			Cleanup:    cleanup,
 		}, nil
 	default:
 		return executionPlan{}, fmt.Errorf("unknown executionMode: %s", mode)
 	}
+}
+
+func comparablePath(path string) string {
+	normalized := filepath.Clean(strings.TrimSpace(path))
+	if runtime.GOOS == "windows" {
+		return strings.ToLower(normalized)
+	}
+	return normalized
+}
+
+func measuredMetricsForPath(path string, measured []multicamCameraResult) (syncMetrics, bool) {
+	target := comparablePath(path)
+	for _, item := range measured {
+		if comparablePath(item.Path) != target {
+			continue
+		}
+		if item.Duration <= 0 {
+			break
+		}
+		return syncMetrics{
+			DelaySeconds:  item.DelaySeconds,
+			Confidence:    item.Confidence,
+			VideoDuration: item.Duration,
+		}, true
+	}
+	return syncMetrics{}, false
 }
 
 func videoCodecForMode(mode string) string {
@@ -3281,6 +3339,35 @@ func writeFFmpegOverIPClientConfig(address, secret string) (string, error) {
 		return "", err
 	}
 	return path, nil
+}
+
+func writeTemporaryFFmpegOverIPClientConfig(address, secret string) (string, func(), error) {
+	content := fmt.Sprintf("{\n  \"address\": %q,\n  \"authSecret\": %q\n}\n", address, secret)
+	root := filepath.Join(runtimeWorkspaceRoot(), ".autosync-runtime", "temp")
+	if err := os.MkdirAll(root, 0755); err != nil {
+		return "", func() {}, err
+	}
+	file, err := os.CreateTemp(root, "ffmpeg-over-ip-*.jsonc")
+	if err != nil {
+		return "", func() {}, err
+	}
+	path := file.Name()
+	if _, err := file.WriteString(content); err != nil {
+		file.Close()
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	if err := os.Chmod(path, 0600); err != nil {
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	return path, func() {
+		_ = os.Remove(path)
+	}, nil
 }
 
 func shellJoin(parts []string) string {
