@@ -1750,6 +1750,10 @@ func normalizeRenderableShots(cameras []multicamAnalysis, shots []shotSegment, t
 
 	trimStart := math.Max(0, filled[0].Start)
 	if trimStart > 0 {
+		for i := range filled {
+			filled[i].Start -= trimStart
+			filled[i].End -= trimStart
+		}
 		totalSeconds -= trimStart
 	}
 	if totalSeconds < 0 {
@@ -2817,6 +2821,14 @@ func loadAppSettings() (appSettings, error) {
 	if err := json.Unmarshal(data, &settings); err != nil {
 		return appSettings{}, err
 	}
+	settings.AssemblyAIKey, err = decryptStoredSecret(settings.AssemblyAIKey)
+	if err != nil {
+		return appSettings{}, err
+	}
+	settings.AIKey, err = decryptStoredSecret(settings.AIKey)
+	if err != nil {
+		return appSettings{}, err
+	}
 	return settings, nil
 }
 
@@ -2825,7 +2837,17 @@ func saveAppSettings(settings appSettings) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(settings, "", "  ")
+	storedSettings := settings
+	var err error
+	storedSettings.AssemblyAIKey, err = encryptStoredSecret(settings.AssemblyAIKey)
+	if err != nil {
+		return err
+	}
+	storedSettings.AIKey, err = encryptStoredSecret(settings.AIKey)
+	if err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(storedSettings, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -3158,6 +3180,9 @@ func (a *App) resolveExecutionPlan(mode, remoteAddress, remoteSecret, remoteClie
 		if a.ffmpegPath == "" {
 			return executionPlan{}, errors.New("ffmpeg not found in PATH")
 		}
+		if !a.supportsNVENC() {
+			return executionPlan{}, errors.New("local GPU mode requires ffmpeg with h264_nvenc support")
+		}
 		return executionPlan{Mode: "gpu", Executable: a.ffmpegPath}, nil
 	case "remote", "ffmpeg-over-ip", "remote-gpu":
 		clientPath := strings.TrimSpace(remoteClientPath)
@@ -3198,6 +3223,18 @@ func videoCodecForMode(mode string) string {
 		return "h264_nvenc"
 	}
 	return "libx264"
+}
+
+func (a *App) supportsNVENC() bool {
+	if a.ffmpegPath == "" {
+		return false
+	}
+	cmd := newCommand(a.ffmpegPath, "-hide_banner", "-encoders")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(output), "h264_nvenc")
 }
 
 func videoPresetForMode(mode, requested string) string {

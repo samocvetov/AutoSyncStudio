@@ -2,8 +2,6 @@
 
 AutoSync Studio — Windows-приложение для синхронизации видео с внешним мастер-аудио, точного рендера и multicam-монтажа.
 
-Текущая версия: `1.0.25`
-
 ## Что умеет проект
 
 - `Single-Cam Sync`: анализирует смещение между видео и отдельным аудиофайлом, затем делает точный sync-рендер.
@@ -63,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File .\third_party\windows\sync-upstream-ffm
 
 ## Версионирование
 
-- текущая версия хранится в [VERSION](C:/Admin/AutoSyncStudio/VERSION)
+- актуальная версия хранится в [VERSION](C:/Admin/AutoSyncStudio/VERSION)
 - история изменений хранится в [CHANGELOG.md](C:/Admin/AutoSyncStudio/CHANGELOG.md)
 
 ## Статус

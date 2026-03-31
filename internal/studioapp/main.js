@@ -21,7 +21,7 @@ const I18N = {
     label_max_lag: "Максимальное окно поиска смещения",
     label_max_lag_short: "Макс. сдвиг",
     label_output_path: "Куда сохранить рендер",
-    label_output_short: "Куда сохранить",
+    label_output_short: "Сохранить",
     label_crf: "CRF",
     label_crf_short: "Качество",
     label_preset: "Пресет кодирования",
@@ -46,21 +46,21 @@ const I18N = {
     label_camera_paths: "Камеры, по одной на строку",
     label_camera_paths_short: "Камеры",
     label_aligned_dir: "Куда сохранить aligned-клипы",
-    label_aligned_dir_short: "Куда сохранить",
+    label_aligned_dir_short: "Сохранить",
     label_aligned_crf: "CRF для выровненных клипов",
     label_aligned_crf_short: "CRF",
     label_multicam_render_output: "Куда сохранить финальный multicam-рендер",
-    label_final_short: "Куда сохранить",
+    label_final_short: "Сохранить",
     label_primary_camera: "Основная камера",
-    label_primary_short: "Main Cam",
+    label_primary_short: "Главная камера",
     label_shot_window: "Окно анализа плана, сек",
     label_shot_window_short: "Window",
     label_min_shot: "Минимальная длина плана, сек",
     label_min_shot_short: "Min Shot",
     multicam_backend_note: "Экспорт и финальный multicam-рендер используют тот же backend, что и single-cam режим.",
-    btn_analyze_multicam: "Измерить offsets",
+    btn_analyze_multicam: "Анализ",
     btn_export_commands: "Экспорт команд",
-    btn_render_final: "Рендер финала",
+    btn_render_final: "Рендер",
     status_render_cancelled: "Рендер остановлен пользователем.",
     status_progress: "Прогресс",
     multicam_output_idle: "Здесь появятся результаты измерения смещений, экспортные команды и предпросмотр плана склеек.",
@@ -131,7 +131,7 @@ const I18N = {
     label_max_lag: "Maximum offset search window",
     label_max_lag_short: "Max offset",
     label_output_path: "Output render path",
-    label_output_short: "Save to",
+    label_output_short: "Save",
     label_crf: "CRF",
     label_crf_short: "Quality",
     label_preset: "Encoding preset",
@@ -156,21 +156,21 @@ const I18N = {
     label_camera_paths: "Camera files, one per line",
     label_camera_paths_short: "Cameras",
     label_aligned_dir: "Where to save aligned clips",
-    label_aligned_dir_short: "Save to",
+    label_aligned_dir_short: "Save",
     label_aligned_crf: "CRF for aligned clips",
     label_aligned_crf_short: "CRF",
     label_multicam_render_output: "Where to save the final multicam render",
-    label_final_short: "Save to",
-    label_primary_camera: "Primary camera",
-    label_primary_short: "Main Cam",
+    label_final_short: "Save",
+    label_primary_camera: "Главная камера",
+    label_primary_short: "Главная камера",
     label_shot_window: "Shot analysis window, sec",
     label_shot_window_short: "Window",
     label_min_shot: "Minimum shot length, sec",
     label_min_shot_short: "Min Shot",
     multicam_backend_note: "Export and final multicam rendering use the same backend as the single-cam mode.",
-    btn_analyze_multicam: "Measure offsets",
+    btn_analyze_multicam: "Analyze",
     btn_export_commands: "Export commands",
-    btn_render_final: "Render final cut",
+    btn_render_final: "Render",
     status_render_cancelled: "Render cancelled by user.",
     status_progress: "Progress",
     multicam_output_idle: "Measured offsets, export commands, and shot plan preview will appear here.",
@@ -224,6 +224,70 @@ const I18N = {
   },
 };
 
+Object.assign(I18N.ru, {
+  document_title: "AutoSync Studio",
+  app_title: "AutoSync Studio",
+  label_primary_camera: "Основная камера",
+  label_primary_short: "Основная камера",
+  label_preview_short: "Превью",
+  preview_full: "Весь файл",
+  preview_2min: "2 минуты",
+  preview_5min: "5 минут",
+  label_edit_mode_short: "Режим",
+  edit_mode_classic: "Классический",
+  edit_mode_ai: "Smart AI",
+  label_analysis_settings: "Параметры анализа",
+  label_ai_settings: "AI настройки",
+  toggle_show: "Показать",
+  toggle_hide: "Скрыть",
+  label_assembly_ai_short: "AssemblyAI",
+  label_ai_provider_short: "AI",
+  ai_provider_off: "Выключено",
+  ai_provider_gemini: "Gemini",
+  ai_provider_openai: "OpenAI",
+  label_ai_key_short: "AI Key",
+  label_shorts_short: "Shorts",
+  label_ai_prompt_short: "AI Prompt",
+  label_shorts_plan_short: "Shorts Plan",
+  btn_plan_shorts: "Построить",
+  placeholder_assembly_ai_key: "AssemblyAI API key",
+  placeholder_ai_key: "Gemini / OpenAI API key",
+  placeholder_ai_prompt: "Найди эмоционально сильные хайлайты и полезные шортсы",
+  status_plan_shorts: "Собираю shorts plan...",
+});
+
+Object.assign(I18N.en, {
+  document_title: "AutoSync Studio",
+  app_title: "AutoSync Studio",
+  label_primary_camera: "Primary camera",
+  label_primary_short: "Primary camera",
+  label_preview_short: "Preview",
+  preview_full: "Whole file",
+  preview_2min: "2 minutes",
+  preview_5min: "5 minutes",
+  label_edit_mode_short: "Mode",
+  edit_mode_classic: "Classic",
+  edit_mode_ai: "Smart AI",
+  label_analysis_settings: "Analysis settings",
+  label_ai_settings: "AI settings",
+  toggle_show: "Show",
+  toggle_hide: "Hide",
+  label_assembly_ai_short: "AssemblyAI",
+  label_ai_provider_short: "AI",
+  ai_provider_off: "Off",
+  ai_provider_gemini: "Gemini",
+  ai_provider_openai: "OpenAI",
+  label_ai_key_short: "AI Key",
+  label_shorts_short: "Shorts",
+  label_ai_prompt_short: "AI Prompt",
+  label_shorts_plan_short: "Shorts Plan",
+  btn_plan_shorts: "Build",
+  placeholder_assembly_ai_key: "AssemblyAI API key",
+  placeholder_ai_key: "Gemini / OpenAI API key",
+  placeholder_ai_prompt: "Find emotionally strong highlights and useful short clips",
+  status_plan_shorts: "Building shorts plan...",
+});
+
 const syncOutput = document.getElementById("syncOutput");
 const multicamOutput = document.getElementById("multicamOutput");
 const backendOutput = document.getElementById("backendOutput");
@@ -236,6 +300,7 @@ let lastDelaySeconds = null;
 let lastMulticamResult = null;
 let currentTab = "Sync";
 let activeRenderOutput = null;
+let currentSystemDisplayName = "";
 
 function loadLanguage() {
   const saved = localStorage.getItem(STORAGE_LANGUAGE_KEY);
@@ -283,6 +348,150 @@ function t(key, replacements = {}) {
   return template;
 }
 
+function setNodeText(selector, text) {
+  const node = typeof selector === "string" ? document.querySelector(selector) : selector;
+  if (node) {
+    node.textContent = text;
+  }
+}
+
+function updateTitleFromState() {
+  const displayName = currentSystemDisplayName || t("app_title");
+  document.title = displayName;
+  setNodeText("#appTitle", displayName);
+}
+
+function setSelectOptionText(selectId, labelsByValue) {
+  const select = document.getElementById(selectId);
+  if (!select) {
+    return;
+  }
+  Array.from(select.options).forEach((option) => {
+    if (Object.prototype.hasOwnProperty.call(labelsByValue, option.value)) {
+      option.textContent = labelsByValue[option.value];
+    }
+  });
+}
+
+function configureDetailsSummary(details, labelText) {
+  if (!details) {
+    return;
+  }
+  const summary = details.querySelector("summary");
+  if (!summary) {
+    return;
+  }
+
+  let labelNode = summary.querySelector(".advanced-toggle-label");
+  if (!labelNode) {
+    labelNode = Array.from(summary.children).find((node) => (
+      node.tagName === "SPAN" && !node.classList.contains("advanced-toggle-state")
+    ));
+    if (labelNode) {
+      labelNode.classList.add("advanced-toggle-label");
+    } else {
+      const existingText = summary.textContent.trim();
+      summary.textContent = "";
+      labelNode = document.createElement("span");
+      labelNode.className = "advanced-toggle-label";
+      labelNode.textContent = existingText;
+      summary.appendChild(labelNode);
+    }
+  }
+  labelNode.textContent = labelText;
+
+  let stateNode = summary.querySelector(".advanced-toggle-state");
+  if (!stateNode) {
+    stateNode = document.createElement("span");
+    stateNode.className = "advanced-toggle-state";
+    summary.appendChild(stateNode);
+  }
+  stateNode.textContent = details.open ? t("toggle_hide") : t("toggle_show");
+
+  if (!details.dataset.toggleBound) {
+    details.addEventListener("toggle", () => {
+      stateNode.textContent = details.open ? t("toggle_hide") : t("toggle_show");
+    });
+    details.dataset.toggleBound = "true";
+  }
+}
+
+function normalizeSyncLayout() {
+  const qualityGroup = document.querySelector("#crf")?.closest(".input-group");
+  const speedGroup = document.querySelector("#preset")?.closest(".input-group");
+  const previewGroup = document.querySelector("#previewMode")?.closest(".input-group");
+  const optionsGrid = qualityGroup?.parentElement;
+
+  if (
+    !qualityGroup ||
+    !speedGroup ||
+    !previewGroup ||
+    !optionsGrid ||
+    !optionsGrid.classList.contains("options-grid")
+  ) {
+    return;
+  }
+
+  if (!optionsGrid.dataset.normalized) {
+    optionsGrid.replaceWith(qualityGroup, speedGroup, previewGroup);
+    optionsGrid.dataset.normalized = "true";
+  }
+}
+
+function applyStaticLabels() {
+  setNodeText("#analysisSettingsLabel", t("label_analysis_settings"));
+  setNodeText("#analyzeSecondsLabel", t("label_analyze_short"));
+  setNodeText("#maxLagSecondsLabel", t("label_max_lag_short"));
+
+  setNodeText(document.querySelector("#previewMode")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_preview_short"));
+  setNodeText(document.querySelector("#multicamPreviewMode")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_preview_short"));
+  setNodeText(document.querySelector("#editMode")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_edit_mode_short"));
+  setNodeText(document.querySelector("#assemblyAiKey")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_assembly_ai_short"));
+  setNodeText(document.querySelector("#aiProvider")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_ai_provider_short"));
+  setNodeText(document.querySelector("#aiKey")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_ai_key_short"));
+  setNodeText(document.querySelector("#shortsCount")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_shorts_short"));
+  setNodeText(document.querySelector("#aiPrompt")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_ai_prompt_short"));
+  setNodeText(document.querySelector("#planShortsBtn")?.closest(".input-group")?.querySelector(".input-prefix"), t("label_shorts_plan_short"));
+
+  const assemblyAiKeyNode = document.getElementById("assemblyAiKey");
+  if (assemblyAiKeyNode) {
+    assemblyAiKeyNode.setAttribute("placeholder", t("placeholder_assembly_ai_key"));
+  }
+  const aiKeyNode = document.getElementById("aiKey");
+  if (aiKeyNode) {
+    aiKeyNode.setAttribute("placeholder", t("placeholder_ai_key"));
+  }
+  const aiPromptNode = document.getElementById("aiPrompt");
+  if (aiPromptNode) {
+    aiPromptNode.setAttribute("placeholder", t("placeholder_ai_prompt"));
+  }
+
+  setNodeText("#planShortsBtn", t("btn_plan_shorts"));
+
+  configureDetailsSummary(document.querySelector("#viewSync .advanced-toggle"), t("label_analysis_settings"));
+  configureDetailsSummary(document.querySelector("#viewBackend .advanced-toggle"), t("label_ai_settings"));
+
+  setSelectOptionText("previewMode", {
+    0: t("preview_full"),
+    120: t("preview_2min"),
+    300: t("preview_5min"),
+  });
+  setSelectOptionText("multicamPreviewMode", {
+    0: t("preview_full"),
+    120: t("preview_2min"),
+    300: t("preview_5min"),
+  });
+  setSelectOptionText("editMode", {
+    classic: t("edit_mode_classic"),
+    ai: t("edit_mode_ai"),
+  });
+  setSelectOptionText("aiProvider", {
+    "": t("ai_provider_off"),
+    gemini: t("ai_provider_gemini"),
+    openai: t("ai_provider_openai"),
+  });
+}
+
 function setLanguage(language) {
   if (!I18N[language]) {
     return;
@@ -290,7 +499,6 @@ function setLanguage(language) {
   currentLanguage = language;
   localStorage.setItem(STORAGE_LANGUAGE_KEY, language);
   document.documentElement.lang = language;
-  document.title = t("document_title");
 
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     node.textContent = t(node.dataset.i18n);
@@ -304,6 +512,8 @@ function setLanguage(language) {
     node.textContent = t(node.dataset.i18nOption);
   });
 
+  applyStaticLabels();
+  updateTitleFromState();
   langRuBtn.classList.toggle("active", language === "ru");
   langEnBtn.classList.toggle("active", language === "en");
 }
@@ -487,6 +697,29 @@ function currentPreviewSeconds() {
   return Number(document.getElementById("previewMode").value || 0);
 }
 
+function resolveSyncRenderOutputPath() {
+  const rawOutput = document.getElementById("outputPath").value.trim();
+  const videoPath = document.getElementById("videoPath").value.trim().replace(/\//g, "\\");
+  const videoBase = videoPath
+    ? videoPath.replace(/.*\\/, "").replace(/\.[^.]+$/, "")
+    : "camera";
+  const defaultName = `${videoBase}_sync.mp4`;
+
+  if (!rawOutput) {
+    if (videoPath.includes("\\")) {
+      return `${videoPath.replace(/\\[^\\]+$/, "")}\\${defaultName}`;
+    }
+    return defaultName;
+  }
+
+  const normalized = rawOutput.replace(/\//g, "\\");
+  const looksLikeFile = /\.[^\\/.]+$/.test(normalized);
+  if (looksLikeFile) {
+    return normalized;
+  }
+  return `${normalized.replace(/\\+$/, "")}\\${defaultName}`;
+}
+
 function currentMulticamPreviewSeconds() {
   return Number(document.getElementById("multicamPreviewMode").value || 0);
 }
@@ -634,11 +867,8 @@ async function loadSystem() {
   try {
     const info = await request("/api/system");
     const displayName = `${info.name} ${info.version}`;
-    document.title = displayName;
-    const appTitleNode = document.getElementById("appTitle");
-    if (appTitleNode) {
-      appTitleNode.textContent = displayName;
-    }
+    currentSystemDisplayName = displayName;
+    updateTitleFromState();
     const chips = [
       displayName,
       `${t("system_http")}: ${info.address}`,
@@ -648,9 +878,15 @@ async function loadSystem() {
     if (Array.isArray(info.bundledComponents) && info.bundledComponents.length > 0) {
       chips.push(...info.bundledComponents.map((item) => `${item.name}: ${item.version}`));
     }
-    document.getElementById("systemInfo").innerHTML = chips
-      .map((item) => `<div class="chip">${item}</div>`)
-      .join("");
+    const systemInfoNode = document.getElementById("systemInfo");
+    if (systemInfoNode) {
+      systemInfoNode.replaceChildren(...chips.map((item) => {
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.textContent = item;
+        return chip;
+      }));
+    }
     setOutput(
       backendOutput,
       [
@@ -664,8 +900,12 @@ async function loadSystem() {
       false,
     );
   } catch (error) {
-    document.getElementById("systemInfo").innerHTML =
-      `<div class="chip">${t("system_unavailable")}: ${error.message}</div>`;
+    currentSystemDisplayName = "";
+    updateTitleFromState();
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = `${t("system_unavailable")}: ${error.message}`;
+    document.getElementById("systemInfo").replaceChildren(chip);
     setOutput(backendOutput, `${t("system_unavailable")}: ${error.message}`, true);
   }
 }
@@ -731,10 +971,20 @@ document.getElementById("renderSyncBtn").addEventListener("click", async () => {
 document.getElementById("analyzeMulticamBtn").addEventListener("click", async () => {
   setOutput(multicamOutput, t("status_multicam_analyzing"), false);
   try {
-    const result = await request("/api/analyze-multicam", currentMulticamPayload());
-    lastMulticamResult = result;
+    const payload = currentMulticamPayload();
+    const [result, exportResult] = await Promise.all([
+      request("/api/analyze-multicam", payload),
+      request("/api/export-multicam-plan", {
+        ...payload,
+        outputDir: deriveMulticamAlignedDir(),
+        crf: Number(document.getElementById("multicamCrf").value || 18),
+        preset: document.getElementById("multicamPreset").value,
+        ...currentBackendPayload(),
+      }),
+    ]);
+    lastMulticamResult = { ...result, exportPlan: exportResult };
 
-    const lines = result.cameras.map((camera, index) => {
+    const analysisLines = result.cameras.map((camera, index) => {
       return [
         `${t("label_camera")} ${index + 1}: ${camera.path}`,
         `  ${t("label_delay")}: ${fmtSeconds(camera.delaySeconds)}`,
@@ -744,26 +994,7 @@ document.getElementById("analyzeMulticamBtn").addEventListener("click", async ()
       ].join("\n");
     });
 
-    setOutput(multicamOutput, lines.join("\n\n"), false);
-  } catch (error) {
-    setOutput(multicamOutput, error.message, true);
-  }
-});
-
-document.getElementById("exportMulticamBtn").addEventListener("click", async () => {
-  setOutput(multicamOutput, t("status_multicam_exporting"), false);
-  try {
-    const payload = currentMulticamPayload();
-    const result = await request("/api/export-multicam-plan", {
-      ...payload,
-      outputDir: deriveMulticamAlignedDir(),
-      crf: Number(document.getElementById("multicamCrf").value || 18),
-      preset: document.getElementById("multicamPreset").value,
-      ...currentBackendPayload(),
-    });
-    lastMulticamResult = result;
-
-    const lines = result.plans.map((plan, index) => {
+    const exportLines = exportResult.plans.map((plan, index) => {
       return [
         `${t("label_camera")} ${index + 1}: ${plan.path}`,
         `${t("label_delay")}: ${fmtSeconds(plan.delaySeconds)}`,
@@ -775,7 +1006,7 @@ document.getElementById("exportMulticamBtn").addEventListener("click", async () 
       ].join("\n");
     });
 
-    setOutput(multicamOutput, [result.note, "", ...lines].join("\n\n"), false);
+    setOutput(multicamOutput, [...analysisLines, exportResult.note, "", ...exportLines].join("\n\n"), false);
   } catch (error) {
     setOutput(multicamOutput, error.message, true);
   }
@@ -892,7 +1123,7 @@ document.getElementById("pickAudioBtn").addEventListener("click", async () => {
 
 document.getElementById("pickOutputDirBtn").addEventListener("click", async () => {
   try {
-    const path = await pickDirectory();
+    const path = await pickSavePath("sync-output", resolveSyncRenderOutputPath());
     if (path) {
       document.getElementById("outputPath").value = path;
     }
@@ -944,7 +1175,7 @@ document.getElementById("pickMasterAudioBtn").addEventListener("click", async ()
 });
 
 document.getElementById("planShortsBtn").addEventListener("click", async () => {
-  setOutput(multicamOutput, "Собираю shorts plan...", false);
+  setOutput(backendOutput, t("status_plan_shorts"), false);
   try {
     const result = await request("/api/plan-shorts", {
       ...currentMulticamPayload(),
@@ -962,15 +1193,15 @@ document.getElementById("planShortsBtn").addEventListener("click", async () => {
         `  Command: ${segment.command}`,
       ].join("\n");
     });
-    setOutput(multicamOutput, [result.note, "", ...lines].join("\n\n"), false);
+    setOutput(backendOutput, [result.note, "", ...lines].join("\n\n"), false);
   } catch (error) {
-    setOutput(multicamOutput, error.message, true);
+    setOutput(backendOutput, error.message, true);
   }
 });
 
 document.getElementById("pickMulticamOutputDirBtn").addEventListener("click", async () => {
   try {
-    const path = await pickDirectory();
+    const path = await pickSavePath("multicam-output", resolveMulticamRenderOutputPath());
     if (path) {
       document.getElementById("multicamRenderOutput").value = path;
     }
@@ -1006,6 +1237,7 @@ wireDropTarget(document.getElementById("camera3Group"));
 wireDropTarget(document.getElementById("camera4Group"));
 wireDropTarget(document.getElementById("remoteClientPathGroup"));
 
+normalizeSyncLayout();
 setLanguage(currentLanguage);
 switchTab(currentTab);
 loadStoredSecrets();

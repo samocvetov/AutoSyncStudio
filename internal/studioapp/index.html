@@ -53,7 +53,7 @@
       border: 1px solid var(--line);
     }
 
-    .title-row {
+    .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -61,13 +61,18 @@
       margin-bottom: 12px;
     }
 
+    .brand {
+      flex: 0 0 auto;
+      min-width: 0;
+    }
+
     h2 {
-      text-align: center;
       color: #fff;
       font-size: 18px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      white-space: nowrap;
     }
 
     .lang-switch {
@@ -111,12 +116,12 @@
 
     .tabs {
       display: flex;
+      flex: 1 1 auto;
       gap: 2px;
-      margin-bottom: 12px;
-      flex-shrink: 0;
       background-color: var(--bg);
       padding: 2px;
       border-radius: 6px;
+      min-width: 0;
     }
 
     .tab-btn {
@@ -171,7 +176,7 @@
       background: transparent;
       padding: 10px 0;
       border-bottom: 1px solid var(--line);
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
 
     .card:last-child {
@@ -190,7 +195,7 @@
     .input-group {
       display: flex;
       gap: 0;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       align-items: stretch;
       border: 1px solid var(--line-2);
       border-radius: 4px;
@@ -316,8 +321,46 @@
     .options-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px 12px;
+      gap: 12px;
       align-items: center;
+    }
+
+    #viewSync .section-hint,
+    #viewSync .advanced-toggle {
+      display: none;
+    }
+
+    #viewSync .options-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    #viewSync .options-grid {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    #viewSync .options-grid .input-group:last-child {
+      grid-column: 1 / -1;
+      margin-top: 0;
+    }
+
+    #viewSync .options-grid .input-group {
+      margin-bottom: 8px;
+    }
+
+    .form-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-stack .input-group,
+    .form-stack .options-grid,
+    .form-stack .actions-inline,
+    .form-stack .advanced-toggle {
+      margin-top: 0;
+      margin-bottom: 0;
     }
 
     .custom-select {
@@ -343,9 +386,9 @@
 
     .actions-inline {
       display: flex;
-      gap: 8px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 10px;
+      margin-top: 0;
     }
 
     .run-btn {
@@ -437,6 +480,25 @@
       border-top: 1px solid var(--line);
     }
 
+    .advanced-toggle summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .advanced-toggle summary::after {
+      content: "";
+    }
+
+    .advanced-toggle-state {
+      color: #8e95a3;
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: 0;
+      flex: 0 0 auto;
+    }
+
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -506,17 +568,24 @@
         border-radius: 0;
       }
 
-      .title-row {
-        flex-direction: column;
+      .topbar {
+        flex-wrap: wrap;
         align-items: flex-start;
       }
 
       .tabs {
+        order: 3;
+        width: 100%;
         flex-wrap: wrap;
       }
 
       .tab-btn {
         min-width: calc(50% - 2px);
+      }
+
+      .tab-btn {
+        flex: 1 1 calc(33.333% - 2px);
+        min-width: 0;
       }
 
       .options-grid {
@@ -531,20 +600,19 @@
 </head>
 <body>
   <div class="container">
-    <div class="title-row">
-      <div>
+    <div class="topbar">
+      <div class="brand">
         <h2 id="appTitle" data-i18n="app_title">AutoSync Studio</h2>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" id="tabSyncBtn" type="button" data-i18n="tab_sync">Single-Cam Sync</button>
+        <button class="tab-btn" id="tabMulticamBtn" type="button" data-i18n="tab_multicam">Multicam</button>
+        <button class="tab-btn" id="tabBackendBtn" type="button" data-i18n="tab_backend">Render Backend</button>
       </div>
       <div class="lang-switch">
         <button class="lang-btn active" id="langRuBtn" type="button">RU</button>
         <button class="lang-btn" id="langEnBtn" type="button">EN</button>
       </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" id="tabSyncBtn" type="button" data-i18n="tab_sync">Single-Cam Sync</button>
-      <button class="tab-btn" id="tabMulticamBtn" type="button" data-i18n="tab_multicam">Multicam</button>
-      <button class="tab-btn" id="tabBackendBtn" type="button" data-i18n="tab_backend">Render Backend</button>
     </div>
 
     <div class="content-area">
@@ -564,10 +632,25 @@
             <button class="browse-btn" id="pickAudioBtn" type="button" data-i18n="browse_btn">Обзор</button>
           </div>
 
-          <input id="analyzeSeconds" type="hidden" value="180">
-          <input id="maxLagSeconds" type="hidden" value="12">
+          <details class="advanced-toggle">
+            <summary>
+              <span id="analysisSettingsLabel">Параметры анализа</span>
+            </summary>
+            <div class="advanced-content">
+              <div class="options-grid" style="margin-top: 10px;">
+                <div class="input-group">
+                  <span class="input-prefix" id="analyzeSecondsLabel">Сек. анализа</span>
+                  <input id="analyzeSeconds" type="number" min="15" max="1800" step="15" value="180">
+                </div>
+                <div class="input-group">
+                  <span class="input-prefix" id="maxLagSecondsLabel">Макс. сдвиг</span>
+                  <input id="maxLagSeconds" type="number" min="1" max="120" step="0.5" value="12">
+                </div>
+              </div>
+            </div>
+          </details>
 
-          <div class="options-grid" style="margin-top: 10px;">
+          <div class="options-grid">
             <div class="input-group">
               <span class="input-prefix" data-i18n="label_crf_short">Качество</span>
               <select id="crf" class="custom-select" style="border:none; background:transparent;">
@@ -596,7 +679,7 @@
             </div>
           </div>
 
-          <div class="input-group" style="margin-top: 10px;">
+          <div class="input-group">
             <span class="input-prefix" data-i18n="label_output_short">Куда сохранить</span>
             <input id="outputPath" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Video\out или C:\Video\result.mp4" data-i18n-placeholder="placeholder_output_path">
             <button class="browse-btn" id="pickOutputDirBtn" type="button" data-i18n="browse_btn">Обзор</button>
@@ -618,7 +701,7 @@
             <button class="browse-btn" id="pickMasterAudioBtn" type="button" data-i18n="browse_btn">Обзор</button>
           </div>
 
-          <div class="input-group droppable" id="camera1Group" style="margin-top: 8px;">
+          <div class="input-group droppable" id="camera1Group">
             <span class="input-prefix">Камера 1</span>
             <input id="camera1Path" type="text" placeholder="C:\Video\cam1.mp4">
             <button class="browse-btn" id="pickCamera1Btn" type="button" data-i18n="browse_btn">Обзор</button>
@@ -642,27 +725,31 @@
             <button class="browse-btn" id="pickCamera4Btn" type="button" data-i18n="browse_btn">Обзор</button>
           </div>
 
-          <div class="options-grid" style="margin-top: 10px;">
-            <div class="input-group droppable" id="multicamRenderOutputGroup">
-              <span class="input-prefix" data-i18n="label_final_short">Куда сохранить</span>
-              <input id="multicamRenderOutput" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Video\out или C:\Video\result.mp4" data-i18n-placeholder="placeholder_output_path">
-              <button class="browse-btn" id="pickMulticamOutputDirBtn" type="button" data-i18n="browse_btn">Обзор</button>
-            </div>
-            <div class="input-group">
-              <span class="input-prefix" data-i18n="label_primary_short">Main Cam</span>
-              <input id="primaryCamera" type="number" min="1" value="1">
-            </div>
+                    <div class="input-group droppable" id="multicamRenderOutputGroup">
+            <span class="input-prefix" data-i18n="label_final_short">Сохранить</span>
+            <input id="multicamRenderOutput" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Video\out или C:\Video\result.mp4" data-i18n-placeholder="placeholder_output_path">
+            <button class="browse-btn" id="pickMulticamOutputDirBtn" type="button" data-i18n="browse_btn">Обзор</button>
           </div>
 
-          <div class="input-group" style="margin-top: 10px;">
-            <span class="input-prefix">Edit Mode</span>
+          <div class="input-group">
+            <span class="input-prefix" data-i18n="label_primary_short">Главная камера</span>
+            <select id="primaryCamera" class="custom-select" style="border:none; background:transparent;">
+              <option value="1" selected>1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <span class="input-prefix">Режим</span>
             <select id="editMode" class="custom-select" style="border:none; background:transparent;">
               <option value="classic">Classic</option>
               <option value="ai">Smart AI</option>
             </select>
           </div>
 
-          <div class="input-group" style="margin-top: 10px;">
+          <div class="input-group">
             <span class="input-prefix">Проверка</span>
             <select id="multicamPreviewMode" class="custom-select" style="border:none; background:transparent;">
               <option value="0">Весь файл</option>
@@ -671,35 +758,29 @@
             </select>
           </div>
 
-          <details class="advanced-toggle">
-            <summary>Настройки рендера</summary>
-            <div class="advanced-content">
-              <div class="options-grid" style="margin-top: 10px;">
-                <div class="input-group">
-                  <span class="input-prefix" data-i18n="label_crf_short">Качество</span>
-                  <select id="multicamCrf" class="custom-select" style="border:none; background:transparent;">
-                    <option value="16">Очень высокое</option>
-                    <option value="18" selected>Высокое</option>
-                    <option value="20">Баланс</option>
-                    <option value="24">Быстрый тест</option>
-                  </select>
-                </div>
-                <div class="input-group">
-                  <span class="input-prefix" data-i18n="label_preset_short">Скорость</span>
-                  <select id="multicamPreset" class="custom-select" style="border:none; background:transparent;">
-                    <option value="medium">medium</option>
-                    <option value="slow">slow</option>
-                    <option value="fast">fast</option>
-                    <option value="veryfast">veryfast</option>
-                  </select>
-                </div>
-              </div>
+          <div class="options-grid">
+            <div class="input-group">
+              <span class="input-prefix" data-i18n="label_crf_short">Качество</span>
+              <select id="multicamCrf" class="custom-select" style="border:none; background:transparent;">
+                <option value="16">Очень высокое</option>
+                <option value="18" selected>Высокое</option>
+                <option value="20">Баланс</option>
+                <option value="24">Быстрый тест</option>
+              </select>
             </div>
-          </details>
+            <div class="input-group">
+              <span class="input-prefix" data-i18n="label_preset_short">Скорость</span>
+              <select id="multicamPreset" class="custom-select" style="border:none; background:transparent;">
+                <option value="medium">medium</option>
+                <option value="slow">slow</option>
+                <option value="fast">fast</option>
+                <option value="veryfast">veryfast</option>
+              </select>
+            </div>
+          </div>
 
           <div class="actions-inline">
             <button class="run-btn analyze" id="analyzeMulticamBtn" type="button" data-i18n="btn_analyze_multicam">Измерить offsets</button>
-            <button class="run-btn secondary" id="exportMulticamBtn" type="button" data-i18n="btn_export_commands">Экспорт команд</button>
             <button class="run-btn secondary render" id="renderMulticamBtn" type="button" data-i18n="btn_render_final">Рендер финала</button>
             <button class="run-btn secondary cancel" id="cancelMulticamBtn" type="button" data-i18n="btn_cancel">Отмена</button>
           </div>
@@ -732,7 +813,7 @@
 
           <div class="input-group">
             <span class="input-prefix" data-i18n="label_remote_secret_short">Secret</span>
-            <input id="remoteSecret" type="text" placeholder="shared-secret" data-i18n-placeholder="placeholder_remote_secret">
+            <input id="remoteSecret" type="password" placeholder="shared-secret" data-i18n-placeholder="placeholder_remote_secret">
           </div>
 
           <details class="advanced-toggle" open>

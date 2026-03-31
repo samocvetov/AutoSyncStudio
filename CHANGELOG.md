@@ -2,6 +2,76 @@
 
 All notable changes to this project are recorded in this file.
 
+## [1.0.52] - 2026-03-31
+
+### Fixed
+- Fixed the remaining Russian multicam label regression where `label_primary_short` still rendered as `Primary camera` instead of `Главная камера`.
+
+## [1.0.51] - 2026-03-31
+
+### Fixed
+- Reissued the UI build with the multicam camera selector label locked to `Главная камера` in the rendered desktop bundle.
+
+## [1.0.50] - 2026-03-31
+
+### Changed
+- Replaced the remaining English `Primary camera` field label with `Главная камера` so the label stays identical in both language modes.
+
+## [1.0.49] - 2026-03-31
+
+### Changed
+- Renamed the remaining English `Main camera` label to `Primary camera` for consistency with the rest of the UI.
+
+## [1.0.48] - 2026-03-31
+
+### Changed
+- Renamed `Куда сохранить` to `Сохранить` across the UI labels.
+- Moved the multicam final output field onto its own row.
+- Replaced the `Main Cam` numeric field with a separate `Главная камера` dropdown row.
+
+## [1.0.47] - 2026-03-31
+
+### Fixed
+- Reverted the overly aggressive 1.0.46 spacing rules that distorted the `Single-Cam Sync` and `Multicam` forms.
+- Shortened the multicam row label to `Режим` to keep the field height aligned with the rest of the form.
+
+## [1.0.46] - 2026-03-31
+
+### Changed
+- Tightened vertical spacing around `Куда сохранить`, `Проверка`, `Качество` and the following rows in both `Single-Cam Sync` and `Multicam` by removing extra bottom margin inside option grids and using explicit visible-row spacing rules.
+- Translated the multicam `Edit Mode` label to Russian: `Режим монтажа`.
+
+## [1.0.45] - 2026-03-31
+
+### Changed
+- Unified row spacing in both `Single-Cam Sync` and `Multicam` with one direct per-row rhythm rule, so standalone rows, two-column option grids, and action buttons now keep the same vertical distance.
+
+## [1.0.44] - 2026-03-31
+
+### Changed
+- Reworked the form layout rhythm in both `Single-Cam Sync` and `Multicam`: row spacing is now driven by one stronger 12px vertical system instead of a mix of small per-control margins.
+
+## [1.0.43] - 2026-03-31
+
+### Changed
+- Unified the vertical spacing between form rows in both `Single-Cam Sync` and `Multicam`, using one consistent spacing step instead of mixed gaps.
+
+## [1.0.42] - 2026-03-31
+
+### Changed
+- Renamed the multicam primary action buttons to match the simpler single-cam wording: `Анализ`, `Рендер`, `Отмена`.
+
+## [1.0.41] - 2026-03-31
+
+### Changed
+- Simplified the multicam action row: `Анализ` now shows both camera offsets and export commands in one pass, so the separate `Экспорт команд` button was removed from the main workflow.
+
+## [1.0.40] - 2026-03-31
+
+### Changed
+- Removed the stale hardcoded version line from the repository README so the project description stays evergreen.
+- Moved the main tab navigation into the same top bar row as the app title and `RU/EN` language switch, matching the intended compact desktop layout.
+
 ## [1.0.39] - 2026-03-31
 
 ### Fixed
